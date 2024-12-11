@@ -1,3 +1,4 @@
+// src/pages/Login.js
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import axios from 'axios';
@@ -66,7 +67,9 @@ function Login({ setIsLoggedIn }) {
     e.preventDefault();
 
     try {
-      const response = await axios.post('http://localhost:5000/api/login', formData);
+      const response = await axios.post('http://localhost:5000/api/login', formData, {
+        withCredentials: true, // 쿠키를 포함하여 요청
+      });
 
       if (response.status === 200) {
         setIsLoggedIn(true);

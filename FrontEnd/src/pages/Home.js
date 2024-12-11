@@ -69,11 +69,14 @@ const AddCategoryButtonStyled = styled(Button)`
   }
 `;
 
-const LoginButton = styled.div`
+const LoginButton = styled.button` /* div에서 button으로 변경 */
   font-size: 16px;
   cursor: pointer;
   transition: all 0.3s ease;
   color: #333;
+  background: none;
+  border: none;
+  padding: 0;
 
   &:hover {
     text-decoration: underline;
@@ -643,7 +646,8 @@ function Home({ isLoggedIn }) {
           )}
           
           {isLoggedIn ? (
-            <LoginButton>
+            // **"Welcome Zion!" 버튼을 클릭하면 로그아웃 페이지로 이동**
+            <LoginButton onClick={() => navigate("/logout")}>
               Welcome Zion!
               {/* 로그인 후 표시되는 메시지 */}
             </LoginButton>

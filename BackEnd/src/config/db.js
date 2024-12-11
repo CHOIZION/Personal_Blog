@@ -1,36 +1,37 @@
 // src/config/db.js
 const mysql = require('mysql2');
+require('dotenv').config(); // .env 파일 로드
 
-// user_db용 커넥션 풀 생성
+// User DB용 커넥션 풀 생성
 const userPool = mysql.createPool({
-  host: 'localhost',        // MySQL 서버 주소
-  user: 'admin',            // MySQL 사용자 이름
-  password: '15881588',     // MySQL 사용자 비밀번호
-  database: 'user_db'       // 사용할 데이터베이스 이름
+  host: process.env.USER_DB_HOST,
+  user: process.env.USER_DB_USER,
+  password: process.env.USER_DB_PASSWORD,
+  database: process.env.USER_DB_NAME,
 });
 
-// category_db용 커넥션 풀 생성
+// Category DB용 커넥션 풀 생성
 const categoryPool = mysql.createPool({
-  host: 'localhost',
-  user: 'admin',
-  password: '15881588',
-  database: 'category_db'    // 기존 카테고리 데이터베이스
+  host: process.env.CATEGORY_DB_HOST,
+  user: process.env.CATEGORY_DB_USER,
+  password: process.env.CATEGORY_DB_PASSWORD,
+  database: process.env.CATEGORY_DB_NAME,
 });
 
-// temporary_storage_db용 커넥션 풀 생성
+// Temporary Storage DB용 커넥션 풀 생성
 const temporaryPool = mysql.createPool({
-  host: 'localhost',
-  user: 'admin',
-  password: '15881588',
-  database: 'temporary_storage_db' // 기존 임시 저장 데이터베이스
+  host: process.env.TEMPORARY_DB_HOST,
+  user: process.env.TEMPORARY_DB_USER,
+  password: process.env.TEMPORARY_DB_PASSWORD,
+  database: process.env.TEMPORARY_DB_NAME,
 });
 
-// complete_storage_db용 커넥션 풀 생성
+// Complete Storage DB용 커넥션 풀 생성
 const completeStoragePool = mysql.createPool({
-  host: 'localhost',
-  user: 'admin',
-  password: '15881588',
-  database: 'complete_storage_db' // 새로 생성한 데이터베이스
+  host: process.env.COMPLETE_DB_HOST,
+  user: process.env.COMPLETE_DB_USER,
+  password: process.env.COMPLETE_DB_PASSWORD,
+  database: process.env.COMPLETE_DB_NAME,
 });
 
 // 프로미스 기반으로 사용 설정 및 내보내기
@@ -38,5 +39,5 @@ module.exports = {
   userPool: userPool.promise(),
   categoryPool: categoryPool.promise(),
   temporaryPool: temporaryPool.promise(),
-  completeStoragePool: completeStoragePool.promise() // 추가된 풀
+  completeStoragePool: completeStoragePool.promise(),
 };

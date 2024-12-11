@@ -532,6 +532,7 @@ function Write() {
     try {
       const response = await fetch('http://localhost:5000/api/temporary_posts', {
         method: 'POST',
+        credentials: 'include', // 쿠키 전송
         headers: {
           'Content-Type': 'application/json'
         },
@@ -557,6 +558,7 @@ function Write() {
     try {
       const response = await fetch(`http://localhost:5000/api/temporary_posts?user_id=${user_id}`, {
         method: 'GET',
+        credentials: 'include', // 쿠키 전송
         headers: {
           'Content-Type': 'application/json'
         }
@@ -581,6 +583,7 @@ function Write() {
     try {
       const response = await fetch(`http://localhost:5000/api/temporary_posts/${id}?user_id=${user_id}`, {
         method: 'GET',
+        credentials: 'include', // 쿠키 전송
         headers: {
           'Content-Type': 'application/json'
         }
@@ -618,6 +621,7 @@ function Write() {
     try {
       const response = await fetch(`http://localhost:5000/api/temporary_posts/${id}?user_id=${user_id}`, {
         method: 'DELETE',
+        credentials: 'include', // 쿠키 전송
         headers: {
           'Content-Type': 'application/json'
         }
@@ -642,6 +646,7 @@ function Write() {
     try {
       const response = await fetch(`http://localhost:5000/api/categories`, {
         method: 'GET',
+        credentials: 'include', // 쿠키 전송 (필요 시)
         headers: {
           'Content-Type': 'application/json'
         }
@@ -685,6 +690,7 @@ function Write() {
     try {
       const response = await fetch('http://localhost:5000/api/complete_posts', {
         method: 'POST',
+        credentials: 'include', // 쿠키 전송
         headers: {
           'Content-Type': 'application/json'
         },

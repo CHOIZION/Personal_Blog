@@ -1,37 +1,67 @@
 // server.js
+require('dotenv').config(); // 환경 변수 로드
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const helmet = require('helmet'); // Helmet 추가
+const rateLimit = require('express-rate-limit'); // Rate Limiting 추가
+const bcrypt = require('bcrypt'); // 비밀번호 해싱을 위한 bcrypt 추가
 const db = require('../src/config/db'); // db.js의 경로를 정확히 지정
 
 const app = express();
 
 // Middleware 설정
-app.use(cors());
+app.use(helmet()); // 보안 헤더 설정
+app.use(cors()); // CORS 설정 (추후 필요시 세부 설정 권장)
 app.use(bodyParser.json());
 
-// 로그인 API (기존 코드 유지)
+// Rate Limiting 설정 (예: IP당 100개의 요청을 15분 동안 허용)
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15분
+  max: 100, // IP당 최대 100개의 요청
+  message: '과도한 요청이 감지되었습니다. 잠시 후 다시 시도해주세요.',
+  standardHeaders: true, // Rate limit 정보를 `RateLimit-*` 헤더에 포함
+  legacyHeaders: false, // `X-RateLimit-*` 헤더 비활성화
+});
+app.use(limiter);
+
+// 로그인 API (비밀번호 해싱 적용)
 app.post('/api/login', async (req, res) => {
   const { username, password } = req.body;
 
+  // 입력값 검증
   if (!username || !password) {
     return res.status(400).json({ message: '아이디와 비밀번호를 입력하세요.' });
   }
 
   try {
-    // 사용자 정보 조회
+    // 사용자 정보 조회 (비밀번호 포함)
     const [rows] = await db.userPool.query(
-      'SELECT * FROM users WHERE username = ? AND password = ?',
-      [username, password]
+      'SELECT * FROM users WHERE username = ?',
+      [username]
     );
 
     if (rows.length === 0) {
-      console.log(`로그인 실패: ${username} (잘못된 아이디 또는 비밀번호)`);
+      console.log(`로그인 실패: ${username} (존재하지 않는 사용자)`);
+      return res.status(401).json({ message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
+    }
+
+    const user = rows[0];
+    console.log(`조회된 사용자: ${user.username}, 비밀번호: ${user.password}`);
+
+    // 비밀번호 비교
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log(`비밀번호 일치 여부: ${isMatch}`);
+
+    if (!isMatch) {
+      console.log(`로그인 실패: ${username} (잘못된 비밀번호)`);
       return res.status(401).json({ message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
     }
 
     console.log(`로그인 성공: ${username}`); // 터미널에 로그인 성공 메시지 출력
-    res.status(200).json({ message: '로그인 성공', user: rows[0] });
+    // 비밀번호 필드 제외
+    const { password: pwd, ...userWithoutPassword } = user;
+    res.status(200).json({ message: '로그인 성공', user: userWithoutPassword });
   } catch (error) {
     console.error('로그인 오류:', error);
     res.status(500).json({ message: '서버 오류가 발생했습니다.' });
@@ -221,7 +251,7 @@ app.get('/api/posts', async (req, res) => {
   try {
     const [rows] = await db.completeStoragePool.query(`
       SELECT posts.id, posts.title, posts.tags, posts.content, posts.created_at, 
-             posts.category_id, categories.name AS category_name
+             posts.category_id, category_db.categories.name AS category_name
       FROM posts
       JOIN category_db.categories ON posts.category_id = category_db.categories.id
       ORDER BY posts.created_at DESC
@@ -285,7 +315,7 @@ app.delete('/api/posts/:id', async (req, res) => {
 });
 
 // 서버 실행
-const PORT = 5000;
+const PORT = process.env.PORT || 5000; // 환경 변수 사용
 app.listen(PORT, () => {
   console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
 });

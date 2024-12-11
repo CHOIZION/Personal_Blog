@@ -131,14 +131,6 @@ const ExternalButton = styled.a`
   }
 `;
 
-// 슬라이드 패널 내 버튼 스타일
-const ButtonContainerStyledPanel = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 10px; /* 버튼들 간의 간격 조정 */
-`;
-
 const Categories = styled.div`
   margin: 30px 0;
 `;

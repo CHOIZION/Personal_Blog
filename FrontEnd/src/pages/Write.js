@@ -246,11 +246,6 @@ const CategoryItemModal = styled.div`
   }
 `;
 
-const CategoryActions = styled.div`
-  display: flex;
-  gap: 5px;
-`;
-
 const ConfirmButton = styled.button`
   padding: 10px 20px;
   background-color: #28a745;

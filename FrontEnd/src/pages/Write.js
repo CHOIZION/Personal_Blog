@@ -2,7 +2,7 @@
 import React, { useRef, useState, useEffect } from 'react';
 import styled, { createGlobalStyle } from 'styled-components';
 
-// Styled Components
+// Styled Components (기존 코드 유지)
 const GlobalStyle = createGlobalStyle`
   h1, h2, h3, h4 {
     margin: 0;
@@ -171,6 +171,8 @@ const SaveButton = styled.button`
   cursor: pointer;
   border-radius: 4px;
   font-size: 14px;
+  opacity: ${(props) => (props.disabled ? 0.6 : 1)};
+  pointer-events: ${(props) => (props.disabled ? 'none' : 'auto')};
 
   &:hover {
     background-color: ${(props) => (props.primary ? '#218838' : '#0056b3')};
@@ -297,9 +299,12 @@ function Write() {
   const titleRef = useRef(null);
   const tagRef = useRef(null);
 
-  // 가정: 사용자 인증 시스템이 있으며, user_id를 가져올 수 있습니다.
-  // 실제 애플리케이션에서는 컨텍스트나 props를 통해 제공되어야 합니다.
-  const user_id = 1; // 예시 user_id
+  // 사용자 정보 상태
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [authError, setAuthError] = useState(null);
+
+  const user_id = user ? user.id : null;
 
   const [showLinkPopup, setShowLinkPopup] = useState(false);
   const [linkURL, setLinkURL] = useState('');
@@ -520,6 +525,11 @@ function Write() {
 
   // 임시 저장 기능
   const handleTemporarySave = async () => {
+    if (!user_id) {
+      setNotification({ message: '로그인이 필요합니다.', error: true });
+      return;
+    }
+
     const title = titleRef.current.innerText.trim();
     const tags = tagRef.current.innerText.trim();
     const content = contentRef.current.innerHTML.trim();
@@ -536,7 +546,7 @@ function Write() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ user_id, title, tags, content })
+        body: JSON.stringify({ title, tags, content })
       });
 
       if (response.ok) {
@@ -555,8 +565,13 @@ function Write() {
 
   // 불러오기 기능
   const handleLoad = async () => {
+    if (!user_id) {
+      setNotification({ message: '로그인이 필요합니다.', error: true });
+      return;
+    }
+
     try {
-      const response = await fetch(`http://localhost:5000/api/temporary_posts?user_id=${user_id}`, {
+      const response = await fetch(`http://localhost:5000/api/temporary_posts`, {
         method: 'GET',
         credentials: 'include', // 쿠키 전송
         headers: {
@@ -581,7 +596,7 @@ function Write() {
   // 특정 임시 저장 글 불러오기
   const loadTemporaryPost = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/temporary_posts/${id}?user_id=${user_id}`, {
+      const response = await fetch(`http://localhost:5000/api/temporary_posts/${id}`, {
         method: 'GET',
         credentials: 'include', // 쿠키 전송
         headers: {
@@ -619,7 +634,7 @@ function Write() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/temporary_posts/${id}?user_id=${user_id}`, {
+      const response = await fetch(`http://localhost:5000/api/temporary_posts/${id}`, {
         method: 'DELETE',
         credentials: 'include', // 쿠키 전송
         headers: {
@@ -643,6 +658,11 @@ function Write() {
 
   // "저장하기" 버튼 클릭 시 카테고리 목록 불러오기 및 모달 열기
   const handleSave = async () => {
+    if (!user_id) {
+      setNotification({ message: '로그인이 필요합니다.', error: true });
+      return;
+    }
+
     try {
       const response = await fetch(`http://localhost:5000/api/categories`, {
         method: 'GET',
@@ -673,6 +693,11 @@ function Write() {
 
   // 카테고리 선택 확인 및 글 저장
   const confirmSave = async () => {
+    if (!user_id) {
+      setNotification({ message: '로그인이 필요합니다.', error: true });
+      return;
+    }
+
     const title = titleRef.current.innerText.trim();
     const tags = tagRef.current.innerText.trim();
     const content = contentRef.current.innerHTML.trim();
@@ -695,7 +720,6 @@ function Write() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          user_id,
           title,
           tags,
           content,
@@ -747,6 +771,49 @@ function Write() {
       return () => clearTimeout(timer);
     }
   }, [notification]);
+
+  // 사용자 정보 불러오기
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/user', {
+          method: 'GET',
+          credentials: 'include', // 쿠키 전송
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setUser(data);
+        } else {
+          const errorData = await response.json();
+          setAuthError(errorData.message || '사용자 정보를 불러오는 중 오류가 발생했습니다.');
+        }
+      } catch (error) {
+        console.error('사용자 정보 불러오기 오류:', error);
+        setAuthError('사용자 정보를 불러오는 중 오류가 발생했습니다.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
+
+  // 렌더링 부분
+  if (loading) {
+    return <div>로딩 중...</div>;
+  }
+
+  if (authError) {
+    return <div>{authError}</div>;
+  }
+
+  if (!user) {
+    return <div>로그인이 필요합니다.</div>;
+  }
 
   return (
     <>
@@ -817,13 +884,13 @@ function Write() {
 
         {/* 임시 저장 버튼과 저장하기 버튼, 불러오기 버튼 추가 */}
         <SaveButtonsContainer>
-          <SaveButton onClick={handleTemporarySave}>
+          <SaveButton onClick={handleTemporarySave} disabled={!user_id}>
             임시 저장
           </SaveButton>
-          <SaveButton primary onClick={handleSave}>
+          <SaveButton primary onClick={handleSave} disabled={!user_id}>
             저장하기
           </SaveButton>
-          <SaveButton onClick={handleLoad}>
+          <SaveButton onClick={handleLoad} disabled={!user_id}>
             불러오기
           </SaveButton>
         </SaveButtonsContainer>

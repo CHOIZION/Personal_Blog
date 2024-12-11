@@ -137,9 +137,20 @@ app.post('/api/logout', (req, res) => {
   res.status(200).json({ message: '로그아웃 성공' });
 });
 
-// 인증이 필요한 라우트들에 authenticate 미들웨어 적용
+// 인증된 사용자 정보를 반환하는 API 엔드포인트 추가
+// 현재 사용자 정보 조회 API (인증 필요)
 const protectedRoutes = express.Router();
 protectedRoutes.use(authenticate);
+
+protectedRoutes.get('/user', async (req, res) => {
+  try {
+    const { id, username } = req.user; // authenticate 미들웨어에서 설정한 req.user 사용
+    res.status(200).json({ id, username });
+  } catch (error) {
+    console.error('사용자 정보 조회 오류:', error);
+    res.status(500).json({ message: '사용자 정보를 조회하는 중 오류가 발생했습니다.' });
+  }
+});
 
 // 카테고리 추가 API (인증 필요)
 protectedRoutes.post('/categories', async (req, res) => {
@@ -188,13 +199,13 @@ protectedRoutes.delete('/categories/:id', async (req, res) => {
 
 // 임시 저장 글 생성 (인증 필요)
 protectedRoutes.post('/temporary_posts', async (req, res) => {
-  const { user_id, title, tags, content } = req.body;
+  const { title, tags, content } = req.body;
 
   // 서버에서 user_id를 직접 받지 않고 req.user.id를 사용하는 것이 더 안전합니다.
   const serverUserId = req.user.id;
 
   if (!title || !content) {
-    return res.status(400).json({ message: '제목과 내용을 모두 입력하세요.', });
+    return res.status(400).json({ message: '제목과 내용을 모두 입력하세요.' });
   }
 
   try {
@@ -379,7 +390,7 @@ protectedRoutes.delete('/posts/:id', async (req, res) => {
   }
 });
 
-// 보호된 라우트들을 /api 경로 하위에 추가
+// 보호된 라우트들을 /api 하위에 추가
 app.use('/api', protectedRoutes);
 
 // 서버 실행

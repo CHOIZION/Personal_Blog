@@ -538,9 +538,13 @@ function Home({ isLoggedIn }) {
       alert("카테고리 이름을 입력하세요.");
       return;
     }
-
+  
     try {
-      const response = await axios.post(`${API_BASE_URL}/categories`, { name: trimmedCategory });
+      const response = await axios.post(
+        `${API_BASE_URL}/categories`, 
+        { name: trimmedCategory },
+        { withCredentials: true } // 인증 쿠키 포함
+      );
       console.log('카테고리 추가 성공:', response.data);
       setCategories([...categories, response.data.category]); // 객체 형태로 추가
       setNewCategory("");
@@ -561,14 +565,20 @@ function Home({ isLoggedIn }) {
     setOpenPanel(null);
   };
 
-  // **카테고리 삭제 함수 추가**
   const handleDeleteCategory = async (id) => {
     try {
-      const response = await axios.delete(`${API_BASE_URL}/categories/${id}`);
+      const response = await axios.delete(
+        `${API_BASE_URL}/categories/${id}`,
+        {
+          withCredentials: true, // 인증 쿠키 포함
+        }
+      );
       console.log('카테고리 삭제 성공:', response.data);
+  
       // 삭제된 카테고리를 목록에서 제거
       setCategories(categories.filter(category => category.id !== id));
       setOpenPanel(null);
+  
       // 게시물 수 재설정
       fetchPosts();
     } catch (error) {
@@ -600,14 +610,20 @@ function Home({ isLoggedIn }) {
   // **게시물 삭제 함수 추가**
   const handleDeletePost = async (postId) => {
     if (!isLoggedIn) return; // 로그인 상태 확인
-
+  
     if (!window.confirm("정말로 이 게시물을 삭제하시겠습니까?")) {
       return;
     }
-
+  
     try {
-      const response = await axios.delete(`${API_BASE_URL}/posts/${postId}`);
+      const response = await axios.delete(
+        `${API_BASE_URL}/posts/${postId}`,
+        {
+          withCredentials: true, // 인증 쿠키 포함
+        }
+      );
       console.log('게시물 삭제 성공:', response.data);
+  
       // 삭제된 게시물을 목록에서 제거
       setPosts(posts.filter(post => post.id !== postId));
       setPostCount(postCount - 1);

@@ -1,0 +1,48 @@
+services:
+  frontend:
+    build:
+      context: ./FrontEnd        # 프론트엔드 Dockerfile 위치
+    ports:
+      - "8080:80"                # 호스트 8080 -> 컨테이너 80
+    networks:
+      - app-network              # 네트워크 설정
+
+  backend:
+    build:
+      context: ./BackEnd         # 백엔드 Dockerfile 위치
+    ports:
+      - "5000:5000"              # 호스트 5000 -> 컨테이너 5000
+    env_file:
+      - ./BackEnd/src/.env        # 백엔드의 .env 파일 경로
+    depends_on:
+      - mysql                     # MySQL 서비스 의존성
+    networks:
+      - app-network
+
+  mysql:
+    image: mysql:8.0               # MySQL 이미지 버전
+    container_name: mysql
+    restart: always
+    env_file:
+      - ./BackEnd/src/.env        # 동일한 .env 파일 참조
+    command:
+      - --default-authentication-plugin=mysql_native_password
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_unicode_ci
+      - --skip-character-set-client-handshake
+    environment:
+      TZ: Asia/Seoul              # 타임존 설정
+      LANG: C.UTF-8               # Locale 설정
+    ports:
+      - "3307:3306"                # 호스트 3307 -> 컨테이너 3306
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d  # 초기화 스크립트 마운트
+    networks:
+      - app-network
+
+networks:
+  app-network:                   # 세 서비스가 공유하는 네트워크
+
+volumes:
+  mysql-data:

@@ -7,7 +7,7 @@ const rateLimit = require('express-rate-limit'); // Rate Limiting
 const bcrypt = require('bcrypt'); // 비밀번호 해싱
 const jwt = require('jsonwebtoken'); // JWT
 const cookieParser = require('cookie-parser'); // 쿠키 파서
-const db = require('../src/config/db'); // db.js 경로 (상대경로 수정)
+const db = require('./config/db'); // db.js 경로 (상대경로 수정)
 
 require('dotenv').config(); // 환경 변수 로드
 
@@ -17,10 +17,13 @@ const app = express();
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 
+// 클라이언트 도메인 설정
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
+
 // Middleware 설정
 app.use(helmet());
 app.use(cors({
-  origin: 'http://localhost:3000', // 클라이언트 도메인
+  origin: CLIENT_ORIGIN, // 클라이언트 도메인
   credentials: true, // 쿠키 전송 허용
 }));
 app.use(bodyParser.json());
@@ -102,7 +105,7 @@ app.post('/api/login', async (req, res) => {
     // 쿠키 설정 (HTTP-Only)
     res.cookie('authToken', token, {
       httpOnly: true, // JavaScript에서 접근 불가
-      secure: false, // HTTPS 환경에서는 true로 설정
+      secure: process.env.NODE_ENV === 'production', // HTTPS 환경에서는 true로 설정
       sameSite: 'strict', // CSRF 방지
       maxAge: 60 * 60 * 1000, // 1시간
     });
@@ -131,7 +134,7 @@ app.get('/api/categories', async (req, res) => {
 app.post('/api/logout', (req, res) => {
   res.clearCookie('authToken', {
     httpOnly: true, // 쿠키가 JavaScript에서 접근되지 않도록 설정
-    secure: false, // HTTPS 환경에서는 true로 설정
+    secure: process.env.NODE_ENV === 'production', // HTTPS 환경에서는 true로 설정
     sameSite: 'strict', // CSRF 방지
   });
   res.status(200).json({ message: '로그아웃 성공' });
@@ -396,5 +399,5 @@ app.use('/api', protectedRoutes);
 // 서버 실행
 const PORT = process.env.PORT || 5000; // 환경 변수 사용
 app.listen(PORT, () => {
-  console.log(`서버가 http://localhost:${PORT} 에서 실행 중입니다.`);
+  console.log(`서버가 ${CLIENT_ORIGIN}에서 실행 중입니다. 포트: http://localhost:${PORT}`);
 });

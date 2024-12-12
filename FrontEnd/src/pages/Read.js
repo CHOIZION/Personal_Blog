@@ -5,7 +5,7 @@ import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import DOMPurify from 'dompurify';
 
-// 스타일 컴포넌트 (배경색을 회색으로 변경)
+// Styled Components (기존 코드 유지)
 const Wrapper = styled.div`
   width: 80%;
   margin: 40px auto;
@@ -63,13 +63,16 @@ function Read({ isLoggedIn }) {
   const [post, setPost] = useState(null);
   const navigate = useNavigate();
 
+  // 환경 변수에서 API 기본 URL 가져오기
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
   useEffect(() => {
     fetchPost();
   }, [id]);
 
   const fetchPost = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/posts/${id}`);
+      const response = await axios.get(`${API_BASE_URL}/posts/${id}`);
       setPost(response.data.post);
     } catch (error) {
       console.error('포스트 조회 오류:', error);

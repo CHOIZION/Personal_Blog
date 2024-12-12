@@ -4,10 +4,9 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-// Styled Components (기존 코드 유지)
+// 기존 Styled Components 유지
 const Wrapper = styled.div`
   width: 100%;
-  height: 100%;
   min-height: 100vh; /* 전체 높이를 채우도록 설정 */
   padding: 20px;
   background: #f0f0f0;
@@ -205,9 +204,6 @@ const CategoryItemHeader = styled.div`
 const CategoryPostsWrapper = styled.div`
   margin-left: 20px;
   margin-top: 10px;
-  overflow: hidden;
-  transition: max-height 0.3s ease;
-  max-height: ${(props) => (props.visible ? "1000px" : "0")};
 `;
 
 const CategoryPosts = styled.div`
@@ -297,8 +293,8 @@ const AddCategoryPanel = styled.div`
   border-radius: 4px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-  max-height: ${(props) => (props.visible ? "300px" : "0")};
+  transition: all 0.3s ease;
+  visibility: ${(props) => (props.visible ? "visible" : "hidden")};
   opacity: ${(props) => (props.visible ? "1" : "0")};
   z-index: 10; /* 다른 요소보다 위에 표시 */
 `;
@@ -314,8 +310,8 @@ const DeleteCategoryPanel = styled.div`
   border-radius: 4px;
   box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
   overflow: hidden;
-  transition: max-height 0.3s ease, opacity 0.3s ease;
-  max-height: ${(props) => (props.visible ? "400px" : "0")};
+  transition: all 0.3s ease;
+  visibility: ${(props) => (props.visible ? "visible" : "hidden")};
   opacity: ${(props) => (props.visible ? "1" : "0")};
   z-index: 10; /* 다른 요소보다 위에 표시 */
 `;
@@ -396,18 +392,50 @@ const DeleteCategoryItem = styled.div`
   }
 `;
 
-// 📌 추가된 스타일 컴포넌트
-const MainContent = styled.div`
+// 📌 추가된 스타일 컴포넌트 for Pagination
+const Pagination = styled.div`
   display: flex;
-  flex-direction: row;
-  justify-content: space-between;
-  padding: 20px;
-  box-sizing: border-box;
-  
-  @media (max-width: 768px) {
-    flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  margin-top: 10px;
+  gap: 10px;
+`;
+
+const PaginationButton = styled.button`
+  padding: 4px 8px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+
+  &:disabled {
+    background-color: #cccccc;
+    cursor: not-allowed;
   }
 `;
+
+const PageNumbers = styled.div`
+  display: flex;
+  gap: 5px;
+`;
+
+const PageNumber = styled.button`
+  padding: 4px 8px;
+  background-color: ${(props) => (props.active ? "#007bff" : "#f0f0f0")};
+  color: ${(props) => (props.active ? "white" : "#333")};
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+
+  &:hover {
+    background-color: ${(props) => (props.active ? "#0056b3" : "#ddd")};
+  }
+`;
+
+const POSTS_PER_PAGE = 10;
 
 // 서버에서 불러온 것을 보여주기 위한 컴포넌트
 function Home({ isLoggedIn }) {
@@ -419,6 +447,7 @@ function Home({ isLoggedIn }) {
   // 📌 추가된 상태 변수
   const [posts, setPosts] = useState([]); // 게시물 목록
   const [expandedCategories, setExpandedCategories] = useState({}); // 각 카테고리의 확장 상태
+  const [currentPage, setCurrentPage] = useState({}); // 현재 페이지 번호 per category
 
   const navigate = useNavigate();
 
@@ -429,6 +458,9 @@ function Home({ isLoggedIn }) {
   const addPanelRef = useRef(null);
   const deletePanelRef = useRef(null);
 
+  // 환경 변수에서 API 기본 URL 가져오기
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
   // 컴포넌트 마운트 시 카테고리 데이터 가져오기
   useEffect(() => {
     fetchCategories();
@@ -438,7 +470,7 @@ function Home({ isLoggedIn }) {
   // 카테고리 조회 함수
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/categories');
+      const response = await axios.get(`${API_BASE_URL}/categories`);
       setCategories(response.data.categories); // 객체 형태로 설정
     } catch (error) {
       console.error('카테고리 가져오기 오류:', error);
@@ -449,9 +481,11 @@ function Home({ isLoggedIn }) {
   // 📌 게시물 조회 함수
   const fetchPosts = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/posts');
-      setPosts(response.data.posts);
-      setPostCount(response.data.posts.length); // 게시물 수로 설정
+      const response = await axios.get(`${API_BASE_URL}/posts`);
+      // Sort posts by created_at ascending (oldest first)
+      const sortedPosts = response.data.posts.sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); // 오래된 순으로 정렬
+      setPosts(sortedPosts);
+      setPostCount(sortedPosts.length); // 게시물 수로 설정
     } catch (error) {
       console.error('게시물 가져오기 오류:', error);
       alert('게시물을 가져오는 중 오류가 발생했습니다.');
@@ -506,7 +540,7 @@ function Home({ isLoggedIn }) {
     }
 
     try {
-      const response = await axios.post('http://localhost:5000/api/categories', { name: trimmedCategory });
+      const response = await axios.post(`${API_BASE_URL}/categories`, { name: trimmedCategory });
       console.log('카테고리 추가 성공:', response.data);
       setCategories([...categories, response.data.category]); // 객체 형태로 추가
       setNewCategory("");
@@ -530,7 +564,7 @@ function Home({ isLoggedIn }) {
   // **카테고리 삭제 함수 추가**
   const handleDeleteCategory = async (id) => {
     try {
-      const response = await axios.delete(`http://localhost:5000/api/categories/${id}`);
+      const response = await axios.delete(`${API_BASE_URL}/categories/${id}`);
       console.log('카테고리 삭제 성공:', response.data);
       // 삭제된 카테고리를 목록에서 제거
       setCategories(categories.filter(category => category.id !== id));
@@ -553,6 +587,14 @@ function Home({ isLoggedIn }) {
       ...prev,
       [categoryId]: !prev[categoryId],
     }));
+
+    // If opening the category, set its current page to 1
+    if (!expandedCategories[categoryId]) {
+      setCurrentPage((prev) => ({
+        ...prev,
+        [categoryId]: 1,
+      }));
+    }
   };
 
   // **게시물 삭제 함수 추가**
@@ -564,7 +606,7 @@ function Home({ isLoggedIn }) {
     }
 
     try {
-      const response = await axios.delete(`http://localhost:5000/api/posts/${postId}`);
+      const response = await axios.delete(`${API_BASE_URL}/posts/${postId}`);
       console.log('게시물 삭제 성공:', response.data);
       // 삭제된 게시물을 목록에서 제거
       setPosts(posts.filter(post => post.id !== postId));
@@ -638,7 +680,7 @@ function Home({ isLoggedIn }) {
                 </AddCategoryPanel>
               </ButtonWrapper>
               
-              {/* 글쓰기 버튼은 별도의 ButtonWrapper로 감쌌지만, 패널이 없으므로 필요 없음 */}
+              {/* 글쓰기 버튼 */}
               <Button onClick={() => navigate("/write")}>
                 글쓰기
               </Button>
@@ -671,10 +713,7 @@ function Home({ isLoggedIn }) {
         </ButtonContainerStyled>
       </NameContainer>
       
-      {/* MainContent에서 PostsContainer 제거 */}
-      <MainContent>
-        {/* 기존 PostsContainer를 제거했습니다 */}
-      </MainContent>
+      {/* MainContent 제거 */}
 
       <Categories>
         {/* CategoryHeader에서 onClick과 화살표 제거 */}
@@ -683,41 +722,96 @@ function Home({ isLoggedIn }) {
         </CategoryHeader>
         <CategoryListWrapper>
           <CategoryList ref={listRef}>
-            {categories.map((category) => (
-              <CategoryItem key={category.id}>
-                <CategoryItemHeader onClick={() => toggleCategory(category.id)}>
-                  {expandedCategories[category.id] ? <span>▼</span> : <span>▶</span>}
-                  · {category.name}
-                </CategoryItemHeader>
-                <CategoryPostsWrapper visible={expandedCategories[category.id]}>
-                  <CategoryPosts>
-                    {posts.filter(post => post.category_id === category.id).length === 0 ? (
-                      <p>게시물이 없습니다.</p>
-                    ) : (
-                      posts
-                        .filter(post => post.category_id === category.id)
-                        .map(post => (
-                          <CategoryPostItem key={post.id} onClick={() => navigate(`/read/${post.id}`)}>
-                            <PostInfo>
-                              <CategoryPostTitle>{post.title}</CategoryPostTitle>
-                              {post.tags && <CategoryPostTags>{post.tags}</CategoryPostTags>}
-                              <CategoryPostDate>작성일: {new Date(post.created_at).toLocaleDateString()}</CategoryPostDate>
-                            </PostInfo>
-                            {isLoggedIn && (
-                              <DeletePostButton onClick={(e) => {
-                                e.stopPropagation(); // 클릭 이벤트 전파 방지
-                                handleDeletePost(post.id);
-                              }}>
-                                삭제
-                              </DeletePostButton>
-                            )}
-                          </CategoryPostItem>
-                        ))
-                    )}
-                  </CategoryPosts>
-                </CategoryPostsWrapper>
-              </CategoryItem>
-            ))}
+            {categories.map((category) => {
+              // Filter posts for the current category and sort them by date ascending (oldest first)
+              const categoryPosts = posts
+                .filter(post => post.category_id === category.id)
+                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at)); // 오래된 순으로 정렬
+
+              const totalPosts = categoryPosts.length;
+              const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
+              const currentCatPage = currentPage[category.id] || 1;
+              const startIndex = (currentCatPage - 1) * POSTS_PER_PAGE;
+              const endIndex = startIndex + POSTS_PER_PAGE;
+              const displayedPosts = categoryPosts.slice(startIndex, endIndex).reverse(); // 최신순으로 표시
+
+              return (
+                <CategoryItem key={category.id}>
+                  <CategoryItemHeader onClick={() => toggleCategory(category.id)}>
+                    {expandedCategories[category.id] ? <span>▼</span> : <span>▶</span>}
+                    &nbsp;· {category.name}
+                  </CategoryItemHeader>
+                  {expandedCategories[category.id] && (
+                    <CategoryPostsWrapper>
+                      <CategoryPosts>
+                        {displayedPosts.length === 0 ? (
+                          <p>게시물이 없습니다.</p>
+                        ) : (
+                          displayedPosts.map((post, index) => {
+                            // 번호 매김 로직 수정
+                            const number = totalPosts - (currentCatPage - 1) * POSTS_PER_PAGE - index;
+                            return (
+                              <CategoryPostItem key={post.id} onClick={() => navigate(`/read/${post.id}`)}>
+                                <PostInfo>
+                                  {/* Sequential numbering per category: latest post is totalPosts */}
+                                  <CategoryPostTitle>{number}. {post.title}</CategoryPostTitle>
+                                  {post.tags && <CategoryPostTags>{post.tags}</CategoryPostTags>}
+                                  <CategoryPostDate>작성일: {new Date(post.created_at).toLocaleDateString()}</CategoryPostDate>
+                                </PostInfo>
+                                {isLoggedIn && (
+                                  <DeletePostButton onClick={(e) => {
+                                    e.stopPropagation(); // 클릭 이벤트 전파 방지
+                                    handleDeletePost(post.id);
+                                  }}>
+                                    삭제
+                                  </DeletePostButton>
+                                )}
+                              </CategoryPostItem>
+                            );
+                          })
+                        )}
+                      </CategoryPosts>
+                      {totalPages > 1 && (
+                        <Pagination>
+                          <PaginationButton
+                            onClick={() => setCurrentPage((prev) => ({
+                              ...prev,
+                              [category.id]: Math.max(prev[category.id] - 1, 1),
+                            }))}
+                            disabled={currentCatPage === 1}
+                          >
+                            Previous
+                          </PaginationButton>
+                          <PageNumbers>
+                            {Array.from({ length: totalPages }, (_, i) => (
+                              <PageNumber
+                                key={i}
+                                active={currentCatPage === i + 1}
+                                onClick={() => setCurrentPage((prev) => ({
+                                  ...prev,
+                                  [category.id]: i + 1,
+                                }))}
+                              >
+                                {i + 1}
+                              </PageNumber>
+                            ))}
+                          </PageNumbers>
+                          <PaginationButton
+                            onClick={() => setCurrentPage((prev) => ({
+                              ...prev,
+                              [category.id]: Math.min(prev[category.id] + 1, totalPages),
+                            }))}
+                            disabled={currentCatPage === totalPages}
+                          >
+                            Next
+                          </PaginationButton>
+                        </Pagination>
+                      )}
+                    </CategoryPostsWrapper>
+                  )}
+                </CategoryItem>
+              );
+            })}
           </CategoryList>
         </CategoryListWrapper>
       </Categories>

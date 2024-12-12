@@ -540,7 +540,7 @@ function Write() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/temporary_posts', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/temporary_posts`, {
         method: 'POST',
         credentials: 'include', // 쿠키 전송
         headers: {
@@ -571,7 +571,7 @@ function Write() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/temporary_posts`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/temporary_posts`, {
         method: 'GET',
         credentials: 'include', // 쿠키 전송
         headers: {
@@ -596,7 +596,7 @@ function Write() {
   // 특정 임시 저장 글 불러오기
   const loadTemporaryPost = async (id) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/temporary_posts/${id}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/temporary_posts/${id}`, {
         method: 'GET',
         credentials: 'include', // 쿠키 전송
         headers: {
@@ -634,7 +634,7 @@ function Write() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/temporary_posts/${id}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/temporary_posts/${id}`, {
         method: 'DELETE',
         credentials: 'include', // 쿠키 전송
         headers: {
@@ -664,7 +664,7 @@ function Write() {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/categories`, {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/categories`, {
         method: 'GET',
         credentials: 'include', // 쿠키 전송 (필요 시)
         headers: {
@@ -713,7 +713,7 @@ function Write() {
     }
 
     try {
-      const response = await fetch('http://localhost:5000/api/complete_posts', {
+      const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/complete_posts`, {
         method: 'POST',
         credentials: 'include', // 쿠키 전송
         headers: {
@@ -776,7 +776,7 @@ function Write() {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/user', {
+        const response = await fetch(`${process.env.REACT_APP_API_BASE_URL}/user`, {
           method: 'GET',
           credentials: 'include', // 쿠키 전송
           headers: {

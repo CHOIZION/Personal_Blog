@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+// Styled Components (기존 코드 유지)
 const Wrapper = styled.div`
   width: 100%;
   height: 100vh;
@@ -59,6 +60,9 @@ function Login({ setIsLoggedIn }) {
   const [formData, setFormData] = useState({ username: '', password: '' });
   const navigate = useNavigate();
 
+  // 환경 변수에서 API 기본 URL 가져오기
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL;
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -67,7 +71,7 @@ function Login({ setIsLoggedIn }) {
     e.preventDefault();
 
     try {
-      const response = await axios.post('http://localhost:5000/api/login', formData, {
+      const response = await axios.post(`${API_BASE_URL}/login`, formData, {
         withCredentials: true, // 쿠키를 포함하여 요청
       });
 
@@ -97,6 +101,7 @@ function Login({ setIsLoggedIn }) {
             placeholder="ID"
             value={formData.username}
             onChange={handleChange}
+            required
           />
           <Input
             type="password"
@@ -104,6 +109,7 @@ function Login({ setIsLoggedIn }) {
             placeholder="Password"
             value={formData.password}
             onChange={handleChange}
+            required
           />
           <Button type="submit">로그인</Button>
         </form>

@@ -3,7 +3,7 @@ services:
     build:
       context: ./FrontEnd        # 프론트엔드 Dockerfile 위치
     ports:
-      - "8080:80"                # 호스트 8080 -> 컨테이너 80
+      - "9090:80"                # 호스트 8080 -> 컨테이너 80
     networks:
       - app-network              # 네트워크 설정
 

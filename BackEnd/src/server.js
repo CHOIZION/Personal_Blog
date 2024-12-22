@@ -17,15 +17,49 @@ const app = express();
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN;
 
-// 클라이언트 도메인 설정
-const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:3000';
+// 클라이언트 도메인 설정 (환경 변수 또는 기본값)
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN || 'http://localhost:9090';
+
+// 허용할 Origin 목록을 환경 변수에서 로드하고 배열로 변환
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(origin => origin.trim())
+  : [];
+
+// ngrok 도메인 패턴을 위한 정규 표현식
+const ngrokPattern = /^https?:\/\/.*\.ngrok(?:-free)?\.app$/;
 
 // Middleware 설정
 app.use(helmet());
+
 app.use(cors({
-  origin: CLIENT_ORIGIN, // 클라이언트 도메인
+  origin: function (origin, callback) {
+    // 브라우저 외의 환경에서 오는 요청은 Origin이 없을 수 있음
+    if (!origin) {
+      console.log('CORS: No Origin (non-browser request)');
+      return callback(null, true);
+    }
+
+    console.log(`CORS: Incoming request origin: ${origin}`);
+
+    // 허용된 Origin인지 확인
+    if (allowedOrigins.includes(origin)) {
+      console.log('CORS: Allowed by ALLOWED_ORIGINS');
+      return callback(null, true);
+    }
+
+    // ngrok 도메인 패턴과 일치하는지 확인
+    if (ngrokPattern.test(origin)) {
+      console.log('CORS: Allowed by ngrokPattern');
+      return callback(null, true);
+    }
+
+    // 그 외의 Origin은 거부
+    console.log('CORS: Origin not allowed');
+    return callback(new Error('CORS 정책 위반'), false);
+  },
   credentials: true, // 쿠키 전송 허용
 }));
+
 app.use(bodyParser.json());
 app.use(cookieParser());
 
@@ -107,7 +141,7 @@ app.post('/api/login', async (req, res) => {
       httpOnly: true, // JavaScript에서 접근 불가
       secure: process.env.NODE_ENV === 'production', // HTTPS 환경에서는 true로 설정
       sameSite: 'strict', // CSRF 방지
-      maxAge: 60 * 60 * 1000, // 1시간
+      maxAge: 3 * 60 * 60 * 1000, // 3시간 (JWT_EXPIRES_IN에 맞춤)
     });
 
     // 비밀번호 필드 제외
@@ -122,7 +156,9 @@ app.post('/api/login', async (req, res) => {
 // 카테고리 조회 API (인증 불필요)
 app.get('/api/categories', async (req, res) => {
   try {
+    console.log('카테고리 조회 요청 수신');
     const [rows] = await db.categoryPool.query('SELECT * FROM categories ORDER BY created_at DESC');
+    console.log(`조회된 카테고리 수: ${rows.length}`);
     res.status(200).json({ categories: rows });
   } catch (error) {
     console.error('카테고리 조회 오류:', error);
@@ -327,6 +363,7 @@ protectedRoutes.post('/complete_posts', async (req, res) => {
 // 모든 완전 저장 글 가져오기 (인증 불필요)
 app.get('/api/posts', async (req, res) => {
   try {
+    console.log('완전 저장 글 조회 요청 수신');
     const [rows] = await db.completeStoragePool.query(`
       SELECT posts.id, posts.title, posts.tags, posts.content, posts.created_at, 
              posts.category_id, category_db.categories.name AS category_name
@@ -334,6 +371,7 @@ app.get('/api/posts', async (req, res) => {
       JOIN category_db.categories ON posts.category_id = category_db.categories.id
       ORDER BY posts.created_at DESC
     `);
+    console.log(`조회된 게시물 수: ${rows.length}`);
     res.status(200).json({ posts: rows });
   } catch (error) {
     console.error('게시물 조회 오류:', error);
@@ -350,6 +388,7 @@ app.get('/api/posts/:id', async (req, res) => {
   }
 
   try {
+    console.log(`특정 포스트 조회 요청 수신: ID ${id}`);
     const [rows] = await db.completeStoragePool.query(`
       SELECT posts.id, posts.title, posts.tags, posts.content, posts.created_at, 
              posts.category_id, category_db.categories.name AS category_name

@@ -60,7 +60,10 @@ app.use(cors({
   credentials: true, // 쿠키 전송 허용
 }));
 
-app.use(bodyParser.json());
+// 여기서 요청 본문(body) 크기 제한을 100MB로 설정
+app.use(bodyParser.json({ limit: '100mb' }));
+app.use(bodyParser.urlencoded({ extended: true, limit: '100mb' }));
+
 app.use(cookieParser());
 
 // Rate Limiting 설정
@@ -90,6 +93,10 @@ const authenticate = (req, res, next) => {
     return res.status(401).json({ message: '유효하지 않은 토큰입니다.' });
   }
 };
+
+// -----------------------
+//       Auth & User
+// -----------------------
 
 // 로그인 API (JWT 발급 및 쿠키 설정)
 app.post('/api/login', async (req, res) => {
@@ -124,7 +131,7 @@ app.post('/api/login', async (req, res) => {
       return res.status(401).json({ message: '아이디 또는 비밀번호가 올바르지 않습니다.' });
     }
 
-    console.log(`로그인 성공: ${username}`); // 터미널에 로그인 성공 메시지 출력
+    console.log(`로그인 성공: ${username}`);
 
     // JWT 생성
     const token = jwt.sign(
@@ -138,10 +145,10 @@ app.post('/api/login', async (req, res) => {
 
     // 쿠키 설정 (HTTP-Only)
     res.cookie('authToken', token, {
-      httpOnly: true, // JavaScript에서 접근 불가
-      secure: process.env.NODE_ENV === 'production', // HTTPS 환경에서는 true로 설정
-      sameSite: 'strict', // CSRF 방지
-      maxAge: 3 * 60 * 60 * 1000, // 3시간 (JWT_EXPIRES_IN에 맞춤)
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 3 * 60 * 60 * 1000, // 3시간
     });
 
     // 비밀번호 필드 제외
@@ -153,7 +160,35 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// 카테고리 조회 API (인증 불필요)
+// 로그아웃 API
+app.post('/api/logout', (req, res) => {
+  res.clearCookie('authToken', {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+  });
+  res.status(200).json({ message: '로그아웃 성공' });
+});
+
+// 인증된 사용자 정보를 반환하는 API 엔드포인트
+const protectedRoutes = express.Router();
+protectedRoutes.use(authenticate);
+
+protectedRoutes.get('/user', async (req, res) => {
+  try {
+    const { id, username } = req.user;
+    res.status(200).json({ id, username });
+  } catch (error) {
+    console.error('사용자 정보 조회 오류:', error);
+    res.status(500).json({ message: '사용자 정보를 조회하는 중 오류가 발생했습니다.' });
+  }
+});
+
+// -----------------------
+//       Categories
+// -----------------------
+
+// 카테고리 조회 (인증 불필요)
 app.get('/api/categories', async (req, res) => {
   try {
     console.log('카테고리 조회 요청 수신');
@@ -166,32 +201,7 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-// 로그아웃 API
-app.post('/api/logout', (req, res) => {
-  res.clearCookie('authToken', {
-    httpOnly: true, // 쿠키가 JavaScript에서 접근되지 않도록 설정
-    secure: process.env.NODE_ENV === 'production', // HTTPS 환경에서는 true로 설정
-    sameSite: 'strict', // CSRF 방지
-  });
-  res.status(200).json({ message: '로그아웃 성공' });
-});
-
-// 인증된 사용자 정보를 반환하는 API 엔드포인트 추가
-// 현재 사용자 정보 조회 API (인증 필요)
-const protectedRoutes = express.Router();
-protectedRoutes.use(authenticate);
-
-protectedRoutes.get('/user', async (req, res) => {
-  try {
-    const { id, username } = req.user; // authenticate 미들웨어에서 설정한 req.user 사용
-    res.status(200).json({ id, username });
-  } catch (error) {
-    console.error('사용자 정보 조회 오류:', error);
-    res.status(500).json({ message: '사용자 정보를 조회하는 중 오류가 발생했습니다.' });
-  }
-});
-
-// 카테고리 추가 API (인증 필요)
+// 카테고리 추가 (인증 필요)
 protectedRoutes.post('/categories', async (req, res) => {
   const { name } = req.body;
 
@@ -202,7 +212,9 @@ protectedRoutes.post('/categories', async (req, res) => {
   try {
     const [result] = await db.categoryPool.query('INSERT INTO categories (name) VALUES (?)', [name.trim()]);
     console.log(`카테고리 추가: ${name}`);
-    res.status(201).json({ message: '카테고리가 추가되었습니다.', category: { id: result.insertId, name: name.trim() } });
+    res
+      .status(201)
+      .json({ message: '카테고리가 추가되었습니다.', category: { id: result.insertId, name: name.trim() } });
   } catch (error) {
     console.error('카테고리 추가 오류:', error);
     if (error.code === 'ER_DUP_ENTRY') {
@@ -213,7 +225,7 @@ protectedRoutes.post('/categories', async (req, res) => {
   }
 });
 
-// 카테고리 삭제 API (인증 필요)
+// 카테고리 삭제 (인증 필요)
 protectedRoutes.delete('/categories/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -236,11 +248,12 @@ protectedRoutes.delete('/categories/:id', async (req, res) => {
   }
 });
 
-// 임시 저장 글 생성 (인증 필요)
+// -----------------------
+//    Temporary Posts
+// -----------------------
+
 protectedRoutes.post('/temporary_posts', async (req, res) => {
   const { title, tags, content } = req.body;
-
-  // 서버에서 user_id를 직접 받지 않고 req.user.id를 사용하는 것이 더 안전합니다.
   const serverUserId = req.user.id;
 
   if (!title || !content) {
@@ -253,14 +266,15 @@ protectedRoutes.post('/temporary_posts', async (req, res) => {
       [serverUserId, title.trim(), tags ? tags.trim() : null, content.trim()]
     );
     console.log(`임시 저장 글 추가: 사용자 ID ${serverUserId}, 글 ID ${result.insertId}`);
-    res.status(201).json({ message: '임시 저장이 완료되었습니다.', temporary_post: { id: result.insertId, title, tags, content } });
+    res
+      .status(201)
+      .json({ message: '임시 저장이 완료되었습니다.', temporary_post: { id: result.insertId, title, tags, content } });
   } catch (error) {
     console.error('임시 저장 오류:', error);
     res.status(500).json({ message: '임시 저장 중 오류가 발생했습니다.' });
   }
 });
 
-// 임시 저장 글 목록 조회 (인증 필요)
 protectedRoutes.get('/temporary_posts', async (req, res) => {
   const serverUserId = req.user.id;
 
@@ -276,7 +290,6 @@ protectedRoutes.get('/temporary_posts', async (req, res) => {
   }
 });
 
-// 특정 임시 저장 글 조회 (인증 필요)
 protectedRoutes.get('/temporary_posts/:id', async (req, res) => {
   const { id } = req.params;
   const serverUserId = req.user.id;
@@ -302,7 +315,6 @@ protectedRoutes.get('/temporary_posts/:id', async (req, res) => {
   }
 });
 
-// 임시 저장 글 삭제 (인증 필요)
 protectedRoutes.delete('/temporary_posts/:id', async (req, res) => {
   const { id } = req.params;
   const serverUserId = req.user.id;
@@ -329,11 +341,13 @@ protectedRoutes.delete('/temporary_posts/:id', async (req, res) => {
   }
 });
 
-// 완전 저장 글 생성 (인증 필요)
+// -----------------------
+//    Complete Posts
+// -----------------------
+
+// 새 글 저장 (인증 필요)
 protectedRoutes.post('/complete_posts', async (req, res) => {
   const { title, tags, content, category_id } = req.body;
-
-  // 서버에서 user_id를 직접 받지 않고 req.user.id를 사용하는 것이 더 안전합니다.
   const serverUserId = req.user.id;
 
   if (!title || !content || !category_id) {
@@ -353,7 +367,10 @@ protectedRoutes.post('/complete_posts', async (req, res) => {
     );
 
     console.log(`글 저장 성공: 사용자 ID ${serverUserId}, 글 ID ${result.insertId}, 제목 "${title}"`);
-    res.status(201).json({ message: '글이 저장되었습니다.', post: { id: result.insertId, user_id: serverUserId, title, tags, content, category_id } });
+    res.status(201).json({
+      message: '글이 저장되었습니다.',
+      post: { id: result.insertId, user_id: serverUserId, title, tags, content, category_id },
+    });
   } catch (error) {
     console.error('완전 저장 글 추가 오류:', error);
     res.status(500).json({ message: '글을 저장하는 중 오류가 발생했습니다.' });
@@ -366,7 +383,8 @@ app.get('/api/posts', async (req, res) => {
     console.log('완전 저장 글 조회 요청 수신');
     const [rows] = await db.completeStoragePool.query(`
       SELECT posts.id, posts.title, posts.tags, posts.content, posts.created_at, 
-             posts.category_id, category_db.categories.name AS category_name
+             posts.category_id, category_db.categories.name AS category_name,
+             posts.user_id
       FROM posts
       JOIN category_db.categories ON posts.category_id = category_db.categories.id
       ORDER BY posts.created_at DESC
@@ -389,13 +407,17 @@ app.get('/api/posts/:id', async (req, res) => {
 
   try {
     console.log(`특정 포스트 조회 요청 수신: ID ${id}`);
-    const [rows] = await db.completeStoragePool.query(`
+    const [rows] = await db.completeStoragePool.query(
+      `
       SELECT posts.id, posts.title, posts.tags, posts.content, posts.created_at, 
-             posts.category_id, category_db.categories.name AS category_name
+             posts.category_id, category_db.categories.name AS category_name,
+             posts.user_id
       FROM posts
       JOIN category_db.categories ON posts.category_id = category_db.categories.id
       WHERE posts.id = ?
-    `, [id]);
+      `,
+      [id]
+    );
 
     if (rows.length === 0) {
       return res.status(404).json({ message: '포스트를 찾을 수 없습니다.' });
@@ -408,7 +430,7 @@ app.get('/api/posts/:id', async (req, res) => {
   }
 });
 
-// 게시물 삭제 API 추가 (인증 필요)
+// 게시물 삭제 API (인증 필요)
 protectedRoutes.delete('/posts/:id', async (req, res) => {
   const { id } = req.params;
   const serverUserId = req.user.id;
@@ -418,12 +440,18 @@ protectedRoutes.delete('/posts/:id', async (req, res) => {
   }
 
   try {
-    const [result] = await db.completeStoragePool.query('DELETE FROM posts WHERE id = ? AND user_id = ?', [id, serverUserId]);
+    // 로그인한 사용자 본인이 쓴 게시물인지 확인
+    const [findRows] = await db.completeStoragePool.query(
+      'SELECT * FROM posts WHERE id = ? AND user_id = ?',
+      [id, serverUserId]
+    );
 
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ message: '삭제할 게시물을 찾을 수 없습니다.' });
+    if (findRows.length === 0) {
+      return res.status(404).json({ message: '삭제할 게시물을 찾을 수 없거나 권한이 없습니다.' });
     }
 
+    // 삭제
+    await db.completeStoragePool.query('DELETE FROM posts WHERE id = ?', [id]);
     console.log(`게시물 삭제: 사용자 ID ${serverUserId}, 글 ID ${id}`);
     res.status(200).json({ message: '게시물이 삭제되었습니다.' });
   } catch (error) {
@@ -432,11 +460,55 @@ protectedRoutes.delete('/posts/:id', async (req, res) => {
   }
 });
 
+// 게시물 수정 API (인증 필요)
+protectedRoutes.put('/posts/:id', async (req, res) => {
+  const { id } = req.params;
+  const { title, tags, content, category_id } = req.body;
+  const serverUserId = req.user.id;
+
+  if (!id) {
+    return res.status(400).json({ message: '게시물 ID를 입력하세요.' });
+  }
+  if (!title || !content || !category_id) {
+    return res.status(400).json({ message: '제목, 내용, 카테고리를 모두 입력하세요.' });
+  }
+
+  try {
+    // 해당 게시물이 로그인한 사용자의 게시물이 맞는지 확인
+    const [findRows] = await db.completeStoragePool.query(
+      'SELECT * FROM posts WHERE id = ? AND user_id = ?',
+      [id, serverUserId]
+    );
+
+    if (findRows.length === 0) {
+      return res.status(404).json({ message: '수정할 게시물을 찾을 수 없거나 권한이 없습니다.' });
+    }
+
+    // 카테고리 존재 여부 확인
+    const [categoryRows] = await db.categoryPool.query('SELECT * FROM categories WHERE id = ?', [category_id]);
+    if (categoryRows.length === 0) {
+      return res.status(400).json({ message: '유효하지 않은 카테고리입니다.' });
+    }
+
+    // 업데이트
+    await db.completeStoragePool.query(
+      'UPDATE posts SET title = ?, tags = ?, content = ?, category_id = ? WHERE id = ?',
+      [title.trim(), tags ? tags.trim() : null, content.trim(), category_id, id]
+    );
+
+    console.log(`게시물 수정: 사용자 ID ${serverUserId}, 글 ID ${id}`);
+    res.status(200).json({ message: '게시물이 수정되었습니다.' });
+  } catch (error) {
+    console.error('게시물 수정 오류:', error);
+    res.status(500).json({ message: '게시물을 수정하는 중 오류가 발생했습니다.' });
+  }
+});
+
 // 보호된 라우트들을 /api 하위에 추가
 app.use('/api', protectedRoutes);
 
 // 서버 실행
-const PORT = process.env.PORT || 5000; // 환경 변수 사용
+const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`서버가 ${CLIENT_ORIGIN}에서 실행 중입니다. 포트: http://localhost:${PORT}`);
 });

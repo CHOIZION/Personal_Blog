@@ -13,17 +13,14 @@ COPY package.json package-lock.json ./
 # 의존성 설치
 RUN npm install
 
-# 현재 사용자 생성 및 변경
-RUN useradd -ms /bin/bash appuser
-
 # 애플리케이션 소스 복사
 COPY . .
 
 # 권한 문제 해결: 빌드 디렉토리 생성 및 소유권 설정
-RUN mkdir -p /app/build && chown -R appuser:appuser /app
+RUN mkdir -p /app/build && chown -R node:node /app
 
 # 사용자 변경 후 빌드 실행
-USER appuser
+USER node
 RUN npm run build
 
 # 2단계: Nginx를 이용한 정적 파일 서빙

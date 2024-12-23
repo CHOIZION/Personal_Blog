@@ -1,21 +1,26 @@
+version: '3.8'
+
 services:
   frontend:
     build:
       context: ./FrontEnd        # 프론트엔드 Dockerfile 위치
+      dockerfile: Dockerfile     # Dockerfile 명시 (선택 사항)
     ports:
-      - "9090:80"                # 호스트 8080 -> 컨테이너 80
+      - "9090:80"                 # 호스트 9090 -> 컨테이너 80
     networks:
-      - app-network              # 네트워크 설정
+      - app-network               # 네트워크 설정
+    depends_on:
+      - backend                   # 백엔드 서비스 의존성
 
   backend:
     build:
-      context: ./BackEnd         # 백엔드 Dockerfile 위치
+      context: ./BackEnd          # 백엔드 Dockerfile 위치
     ports:
-      - "5000:5000"              # 호스트 5000 -> 컨테이너 5000
+      - "5000:5000"               # 호스트 5000 -> 컨테이너 5000
     env_file:
       - ./BackEnd/src/.env        # 백엔드의 .env 파일 경로
     depends_on:
-      - mysql                     # MySQL 서비스 의존성
+      - mysql                      # MySQL 서비스 의존성
     networks:
       - app-network
 

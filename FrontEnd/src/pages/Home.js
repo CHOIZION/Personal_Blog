@@ -4,10 +4,9 @@ import styled from "styled-components";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 
-// 기존 Styled Components 유지
 const Wrapper = styled.div`
   width: 100%;
-  min-height: 100vh; /* 전체 높이를 채우도록 설정 */
+  min-height: 100vh;
   padding: 20px;
   background: #f0f0f0;
   font-family: Arial, sans-serif;
@@ -33,10 +32,9 @@ const RightContainer = styled.div`
   align-items: center;
   margin-left: auto;
   gap: 15px;
-  position: relative; /* 패널의 절대 위치 기준 설정 */
+  position: relative;
 `;
 
-// 버튼 스타일을 통일하기 위해 재사용 가능한 Button 컴포넌트 생성
 const Button = styled.button`
   padding: 8px 12px;
   background-color: #007bff;
@@ -54,7 +52,6 @@ const Button = styled.button`
 
 const DeleteCategoryButton = styled(Button)`
   background-color: #dc3545;
-
   &:hover {
     background-color: #c82333;
   }
@@ -62,7 +59,6 @@ const DeleteCategoryButton = styled(Button)`
 
 const AddCategoryButtonStyled = styled(Button)`
   background-color: #28a745;
-
   &:hover {
     background-color: #218838;
   }
@@ -70,14 +66,14 @@ const AddCategoryButtonStyled = styled(Button)`
 
 const EditPostButton = styled.button`
   padding: 4px 8px;
-  background-color: #17a2b8; /* 파란색에 가까운 톤 */
+  background-color: #17a2b8;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
   font-size: 12px;
   transition: background-color 0.3s ease;
-  margin-right: 5px; /* 삭제 버튼과 간격 */
+  margin-right: 5px;
 
   &:hover {
     background-color: #138496;
@@ -101,12 +97,12 @@ const LoginButton = styled.button`
 
 const NameContainer = styled.div`
   display: flex;
-  flex-direction: column; /* 수직 정렬 */
+  flex-direction: column;
   align-items: flex-start;
-  padding: 0 40px; 
+  padding: 0 40px;
   margin-top: 20px;
   box-sizing: border-box;
-  gap: 10px; /* 요소들 간의 간격 조정 */
+  gap: 10px;
 
   @media (max-width: 768px) {
     padding: 0 20px;
@@ -121,8 +117,8 @@ const Name = styled.div`
 
 const ButtonContainerStyled = styled.div`
   display: flex;
-  flex-direction: row; /* 수평 정렬 */
-  gap: 10px; 
+  flex-direction: row;
+  gap: 10px;
 `;
 
 const ExternalButton = styled.a`
@@ -174,7 +170,7 @@ const CategoryTitle = styled.h2`
 const CategoryListWrapper = styled.div`
   margin-left: 40px;
   margin-top: 10px;
-  
+
   @media (max-width: 768px) {
     margin-left: 20px;
   }
@@ -221,7 +217,6 @@ const CategoryPosts = styled.div`
   gap: 15px;
 `;
 
-// 포스트 박스를 버튼처럼 보이게 하기 위한 스타일
 const CategoryPostItem = styled.div`
   display: flex;
   justify-content: space-between;
@@ -279,13 +274,12 @@ const DeletePostButton = styled.button`
   cursor: pointer;
   font-size: 12px;
   transition: background-color 0.3s ease;
-  
+
   &:hover {
     background-color: #c82333;
   }
 `;
 
-// 새로운 ButtonWrapper 추가
 const ButtonWrapper = styled.div`
   position: relative;
 `;
@@ -293,7 +287,7 @@ const ButtonWrapper = styled.div`
 const AddCategoryPanel = styled.div`
   position: absolute;
   top: 50px; 
-  left: 0; 
+  left: 0;
   width: 250px;
   padding: 20px;
   border: 1px solid #ddd;
@@ -308,9 +302,9 @@ const AddCategoryPanel = styled.div`
 `;
 
 const DeleteCategoryPanel = styled.div`
-  position: absolute; 
+  position: absolute;
   top: 50px; 
-  left: 0; 
+  left: 0;
   width: 250px;
   padding: 20px;
   border: 1px solid #ddd;
@@ -444,19 +438,18 @@ const PageNumber = styled.button`
 const POSTS_PER_PAGE = 10;
 
 function Home({ isLoggedIn }) {
-  const [postCount, setPostCount] = useState(0); // 전체 게시물 수
-  const [categories, setCategories] = useState([]); // 카테고리 목록
+  const [postCount, setPostCount] = useState(0);
+  const [categories, setCategories] = useState([]);
   const [openPanel, setOpenPanel] = useState(null); // 'add', 'delete', or null
   const [newCategory, setNewCategory] = useState("");
 
-  const [posts, setPosts] = useState([]); 
+  const [posts, setPosts] = useState([]);
   const [expandedCategories, setExpandedCategories] = useState({});
   const [currentPage, setCurrentPage] = useState({});
 
   const navigate = useNavigate();
 
   const listRef = useRef(null);
-
   const addButtonRef = useRef(null);
   const deleteButtonRef = useRef(null);
   const addPanelRef = useRef(null);
@@ -476,8 +469,8 @@ function Home({ isLoggedIn }) {
       const response = await axios.get(`${API_BASE_URL}/categories`);
       setCategories(response.data.categories);
     } catch (error) {
-      console.error('카테고리 가져오기 오류:', error);
-      alert('카테고리를 가져오는 중 오류가 발생했습니다.');
+      console.error("카테고리 가져오기 오류:", error);
+      alert("카테고리를 가져오는 중 오류가 발생했습니다.");
     }
   };
 
@@ -485,15 +478,15 @@ function Home({ isLoggedIn }) {
   const fetchPosts = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/posts`);
-      // 오래된 순으로 정렬
+      // 오래된 순으로 정렬 (생성일 오름차순)
       const sortedPosts = response.data.posts.sort(
         (a, b) => new Date(a.created_at) - new Date(b.created_at)
       );
       setPosts(sortedPosts);
       setPostCount(sortedPosts.length);
     } catch (error) {
-      console.error('게시물 가져오기 오류:', error);
-      alert('게시물을 가져오는 중 오류가 발생했습니다.');
+      console.error("게시물 가져오기 오류:", error);
+      alert("게시물을 가져오는 중 오류가 발생했습니다.");
     }
   };
 
@@ -505,7 +498,7 @@ function Home({ isLoggedIn }) {
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
-        openPanel === 'add' &&
+        openPanel === "add" &&
         addPanelRef.current &&
         !addPanelRef.current.contains(event.target) &&
         addButtonRef.current &&
@@ -514,7 +507,7 @@ function Home({ isLoggedIn }) {
         setOpenPanel(null);
       }
       if (
-        openPanel === 'delete' &&
+        openPanel === "delete" &&
         deletePanelRef.current &&
         !deletePanelRef.current.contains(event.target) &&
         deleteButtonRef.current &&
@@ -525,13 +518,13 @@ function Home({ isLoggedIn }) {
     };
 
     if (openPanel !== null) {
-      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener("mousedown", handleClickOutside);
     } else {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     }
 
     return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, [openPanel]);
 
@@ -542,14 +535,13 @@ function Home({ isLoggedIn }) {
       alert("카테고리 이름을 입력하세요.");
       return;
     }
-  
+
     try {
       const response = await axios.post(
-        `${API_BASE_URL}/categories`, 
+        `${API_BASE_URL}/categories`,
         { name: trimmedCategory },
         { withCredentials: true }
       );
-      console.log('카테고리 추가 성공:', response.data);
       setCategories([...categories, response.data.category]);
       setNewCategory("");
       setOpenPanel(null);
@@ -557,7 +549,7 @@ function Home({ isLoggedIn }) {
       if (error.response && error.response.status === 409) {
         alert("이미 존재하는 카테고리입니다.");
       } else {
-        console.error('카테고리 추가 오류:', error);
+        console.error("카테고리 추가 오류:", error);
         alert("카테고리를 추가하는 중 오류가 발생했습니다.");
       }
     }
@@ -574,12 +566,11 @@ function Home({ isLoggedIn }) {
       const response = await axios.delete(`${API_BASE_URL}/categories/${id}`, {
         withCredentials: true,
       });
-      console.log('카테고리 삭제 성공:', response.data);
       setCategories(categories.filter((category) => category.id !== id));
       setOpenPanel(null);
       fetchPosts(); // 게시물 수 재설정
     } catch (error) {
-      console.error('카테고리 삭제 오류:', error);
+      console.error("카테고리 삭제 오류:", error);
       if (error.response && error.response.status === 404) {
         alert("삭제할 카테고리를 찾을 수 없습니다.");
       } else {
@@ -607,21 +598,20 @@ function Home({ isLoggedIn }) {
   // 게시물 삭제
   const handleDeletePost = async (postId) => {
     if (!isLoggedIn) return;
-  
+
     if (!window.confirm("정말로 이 게시물을 삭제하시겠습니까?")) {
       return;
     }
-  
+
     try {
-      const response = await axios.delete(`${API_BASE_URL}/posts/${postId}`, {
+      await axios.delete(`${API_BASE_URL}/posts/${postId}`, {
         withCredentials: true,
       });
-      console.log('게시물 삭제 성공:', response.data);
       setPosts(posts.filter((post) => post.id !== postId));
-      setPostCount(postCount - 1);
+      setPostCount((prevCount) => prevCount - 1);
       alert("게시물이 성공적으로 삭제되었습니다.");
     } catch (error) {
-      console.error('게시물 삭제 오류:', error);
+      console.error("게시물 삭제 오류:", error);
       if (error.response && error.response.status === 404) {
         alert("삭제할 게시물을 찾을 수 없거나 권한이 없습니다.");
       } else {
@@ -633,7 +623,6 @@ function Home({ isLoggedIn }) {
   // 게시물 수정 버튼 클릭
   const handleEditPost = (postId) => {
     if (!isLoggedIn) return;
-    // 수정 페이지로 이동 (/write?edit=postId)
     navigate(`/write?edit=${postId}`);
   };
 
@@ -645,10 +634,16 @@ function Home({ isLoggedIn }) {
           {isLoggedIn && (
             <>
               <ButtonWrapper>
-                <DeleteCategoryButton onClick={() => togglePanel('delete')} ref={deleteButtonRef}>
+                <DeleteCategoryButton
+                  onClick={() => togglePanel("delete")}
+                  ref={deleteButtonRef}
+                >
                   카테고리 삭제
                 </DeleteCategoryButton>
-                <DeleteCategoryPanel visible={openPanel === 'delete'} ref={deletePanelRef}>
+                <DeleteCategoryPanel
+                  visible={openPanel === "delete"}
+                  ref={deletePanelRef}
+                >
                   <DeleteCategoryTitle>삭제할 카테고리 선택</DeleteCategoryTitle>
                   {categories.length === 0 ? (
                     <p>삭제할 카테고리가 없습니다.</p>
@@ -658,7 +653,11 @@ function Home({ isLoggedIn }) {
                         <DeleteCategoryItem
                           key={category.id}
                           onClick={() => {
-                            if (window.confirm(`정말로 "${category.name}" 카테고리를 삭제하시겠습니까?`)) {
+                            if (
+                              window.confirm(
+                                `정말로 "${category.name}" 카테고리를 삭제하시겠습니까?`
+                              )
+                            ) {
                               handleDeleteCategory(category.id);
                             }
                           }}
@@ -672,10 +671,16 @@ function Home({ isLoggedIn }) {
               </ButtonWrapper>
 
               <ButtonWrapper>
-                <AddCategoryButtonStyled onClick={() => togglePanel('add')} ref={addButtonRef}>
+                <AddCategoryButtonStyled
+                  onClick={() => togglePanel("add")}
+                  ref={addButtonRef}
+                >
                   카테고리 추가
                 </AddCategoryButtonStyled>
-                <AddCategoryPanel visible={openPanel === 'add'} ref={addPanelRef}>
+                <AddCategoryPanel
+                  visible={openPanel === "add"}
+                  ref={addPanelRef}
+                >
                   <AddCategoryTitle>카테고리 작성하기</AddCategoryTitle>
                   <AddCategoryInput
                     type="text"
@@ -684,17 +689,21 @@ function Home({ isLoggedIn }) {
                     onChange={(e) => setNewCategory(e.target.value)}
                   />
                   <AddCategoryButtons>
-                    <ConfirmButton onClick={handleAddCategory}>확인</ConfirmButton>
-                    <CancelButton onClick={handleCancelAddCategory}>취소</CancelButton>
+                    <ConfirmButton onClick={handleAddCategory}>
+                      확인
+                    </ConfirmButton>
+                    <CancelButton onClick={handleCancelAddCategory}>
+                      취소
+                    </CancelButton>
                   </AddCategoryButtons>
                 </AddCategoryPanel>
               </ButtonWrapper>
-              
+
               {/* 글쓰기 버튼 */}
               <Button onClick={() => navigate("/write")}>글쓰기</Button>
             </>
           )}
-          
+
           {isLoggedIn ? (
             <LoginButton onClick={() => navigate("/logout")}>
               Welcome Zion!
@@ -708,16 +717,24 @@ function Home({ isLoggedIn }) {
       <NameContainer>
         <Name>Zion Choi - 왕초보입니다.</Name>
         <ButtonContainerStyled>
-          <ExternalButton href="https://www.sch.ac.kr/" target="_blank" rel="noopener noreferrer">
+          <ExternalButton
+            href="https://www.sch.ac.kr/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             SCH Univ
           </ExternalButton>
-          <ExternalButton href="https://github.com/CHOIZION" target="_blank" rel="noopener noreferrer">
+          <ExternalButton
+            href="https://github.com/CHOIZION"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
             Github
           </ExternalButton>
           <ExternalButton href="mailto:czion04@gmail.com">Email</ExternalButton>
         </ButtonContainerStyled>
       </NameContainer>
-      
+
       <Categories>
         <CategoryHeader>
           <CategoryTitle>전체 게시물 ({postCount})</CategoryTitle>
@@ -728,15 +745,17 @@ function Home({ isLoggedIn }) {
               // 해당 카테고리에 속한 게시물만 필터링
               const categoryPosts = posts
                 .filter((post) => post.category_id === category.id)
-                .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                // 이미 오래된 순으로 정렬된 posts에서, 다시 정렬 필요 시 아래처럼 가능:
+                // .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
 
               const totalPosts = categoryPosts.length;
               const totalPages = Math.ceil(totalPosts / POSTS_PER_PAGE);
               const currentCatPage = currentPage[category.id] || 1;
+
               const startIndex = (currentCatPage - 1) * POSTS_PER_PAGE;
               const endIndex = startIndex + POSTS_PER_PAGE;
-              // 최신글이 위에 오도록 reverse() 적용
-              const displayedPosts = categoryPosts.slice(startIndex, endIndex).reverse();
+              // **reverse() 제거** (오래된 글 → 번호가 작은 글이 위)
+              const displayedPosts = categoryPosts.slice(startIndex, endIndex);
 
               return (
                 <CategoryItem key={category.id}>
@@ -744,6 +763,7 @@ function Home({ isLoggedIn }) {
                     {expandedCategories[category.id] ? <span>▼</span> : <span>▶</span>}
                     &nbsp;· {category.name}
                   </CategoryItemHeader>
+
                   {expandedCategories[category.id] && (
                     <CategoryPostsWrapper>
                       <CategoryPosts>
@@ -751,11 +771,11 @@ function Home({ isLoggedIn }) {
                           <p>게시물이 없습니다.</p>
                         ) : (
                           displayedPosts.map((post, index) => {
-                            const number = totalPosts - (currentCatPage - 1) * POSTS_PER_PAGE - index;
+                            // 1번부터 시작하는 글 번호 (해당 카테고리 내에서)
+                            const number = startIndex + index + 1;
                             return (
-                              <CategoryPostItem 
+                              <CategoryPostItem
                                 key={post.id}
-                                // 게시물 제목/내용 영역을 클릭하면 상세 페이지(읽기 페이지)로 이동
                                 onClick={() => navigate(`/read/${post.id}`)}
                               >
                                 <PostInfo>
@@ -766,13 +786,14 @@ function Home({ isLoggedIn }) {
                                     <CategoryPostTags>{post.tags}</CategoryPostTags>
                                   )}
                                   <CategoryPostDate>
-                                    작성일: {new Date(post.created_at).toLocaleDateString()}
+                                    작성일:{" "}
+                                    {new Date(post.created_at).toLocaleDateString()}
                                   </CategoryPostDate>
                                 </PostInfo>
 
-                                {/* 수정 / 삭제 버튼 영역 */}
+                                {/* 수정 / 삭제 버튼 */}
                                 {isLoggedIn && (
-                                  <div style={{ display: 'flex', alignItems: 'center' }}>
+                                  <div style={{ display: "flex", alignItems: "center" }}>
                                     <EditPostButton
                                       onClick={(e) => {
                                         e.stopPropagation();
@@ -832,7 +853,10 @@ function Home({ isLoggedIn }) {
                             onClick={() =>
                               setCurrentPage((prev) => ({
                                 ...prev,
-                                [category.id]: Math.min(prev[category.id] + 1, totalPages),
+                                [category.id]: Math.min(
+                                  prev[category.id] + 1,
+                                  totalPages
+                                ),
                               }))
                             }
                             disabled={currentCatPage === totalPages}

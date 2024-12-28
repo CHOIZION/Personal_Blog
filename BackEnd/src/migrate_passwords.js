@@ -1,5 +1,5 @@
 const bcrypt = require('bcrypt');
-const password = 'kokokoko04!'; // 평문 비밀번호
+const password = 'your password'; // 평문 비밀번호
 
 bcrypt.hash(password, 10, (err, hashedPassword) => {
   if (err) throw err;

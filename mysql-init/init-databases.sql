@@ -1,8 +1,8 @@
 -- root 사용자 비밀번호 설정
-ALTER USER 'root'@'%' IDENTIFIED BY '1743';
+ALTER USER 'root'@'%' IDENTIFIED BY 'your password';
 
 -- admin 사용자 생성 (이미 존재할 경우 무시)
-CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY '15881588';
+CREATE USER IF NOT EXISTS 'admin'@'%' IDENTIFIED BY 'your password';
 
 -- admin 사용자에게 권한 부여
 GRANT ALL PRIVILEGES ON *.* TO 'admin'@'%' WITH GRANT OPTION;
